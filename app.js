@@ -99,8 +99,8 @@ function setupEventListeners() {
         if (!checkReady()) return;
         const propId = document.getElementById('agPropId').value.trim();
         const tenant = document.getElementById('agTenant').value.trim();
-        const startDays = parseInt(document.getElementById('agStartDays').value || '0');
-        const months = parseInt(document.getElementById('agDurationMonths').value || '12');
+        const startDays = parseInt(document.getElementById('agStartDays')?.value || '0');
+        const months = parseInt(document.getElementById('agDurationMonths')?.value || '12');
         const terms = document.getElementById('agTerms').value.trim();
 
         if (!propId || !ethers.isAddress(tenant) || !terms) return alert('กรุณากรอกข้อมูลและที่อยู่ผู้เช่าให้ถูกต้อง');
