@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartLiving Property - Smart Rental & Deposit Management</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Ethers.js v6 CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.5/ethers.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Kanit', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+
+    <!-- Top Navigation Bar -->
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <span class="text-2xl">🏢</span>
+                <div>
+                    <h1 class="text-lg font-bold bg-gradient-to-r from-sky-400 to-indigo-400 bg-clip-text text-transparent">
+                        SmartLiving Property
+                    </h1>
+                    <p class="text-xs text-slate-400">ระบบจัดการสัญญาเช่าและเงินประกันบน Blockchain (CSI301)</p>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-3">
+                <button id="btnConnectWallet" class="px-4 py-2 bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 rounded-lg text-sm font-medium shadow-lg transition">
+                    เชื่อมต่อ MetaMask
+                </button>
+                <div id="connectedBox" class="hidden flex items-center space-x-2 bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-lg text-xs">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span id="networkName" class="text-sky-400 font-semibold">Sepolia</span>
+                    <span class="text-slate-500">|</span>
+                    <span id="userAccount" class="text-slate-300 font-mono">0x...</span>
+                    <span class="text-slate-500">|</span>
+                    <span id="userBalance" class="text-emerald-400 font-semibold">0 ETH</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+
+        <!-- Contract Info Card -->
+        <div class="bg-gradient-to-r from-slate-900 to-slate-850 p-6 rounded-2xl border border-slate-800 shadow-xl">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-sky-500/20 text-sky-300 border border-sky-500/30">
+                        Smart Contract Deployed & Verified
+                    </span>
+                    <h2 class="text-xl font-bold mt-2 text-white flex items-center gap-2">
+                        <span>PropertyRentalManagement</span>
+                        <a id="etherscanLink" href="https://sepolia.etherscan.io/address/0x6990636d74eaba15c5d59db64a63de707b0399c2#code" target="_blank" class="text-xs text-sky-400 hover:underline">
+                            (ดูบน Etherscan ↗)
+                        </a>
+                    </h2>
+                    <p class="text-xs text-slate-400 font-mono mt-1 break-all" id="contractAddrDisplay">
+                        0x6990636d74eaba15c5d59db64a63de707b0399c2
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full md:w-auto text-center">
+                    <div class="bg-slate-800/60 p-3 rounded-xl border border-slate-700/50">
+                        <p class="text-xs text-slate-400">เงินประกันคงค้าง</p>
+                        <p id="statBalance" class="text-base font-bold text-emerald-400">0 ETH</p>
+                    </div>
+                    <div class="bg-slate-800/60 p-3 rounded-xl border border-slate-700/50">
+                        <p class="text-xs text-slate-400">ห้องทั้งหมด</p>
+                        <p id="statProperties" class="text-base font-bold text-sky-400">0</p>
+                    </div>
+                    <div class="bg-slate-800/60 p-3 rounded-xl border border-slate-700/50">
+                        <p class="text-xs text-slate-400">สัญญาทั้งหมด</p>
+                        <p id="statAgreements" class="text-base font-bold text-indigo-400">0</p>
+                    </div>
+                    <div class="bg-slate-800/60 p-3 rounded-xl border border-slate-700/50">
+                        <p class="text-xs text-slate-400">ผู้มีอำนาจ (Admin)</p>
+                        <p id="statArbitrator" class="text-xs font-mono font-bold text-amber-400">0x...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 7 Main Functional Modules Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+            <!-- 1. Register Property -->
+            <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center space-x-2 mb-3">
+                        <span class="w-7 h-7 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center font-bold text-sm">1</span>
+                        <h3 class="font-bold text-slate-200">ลงทะเบียนทรัพย์สิน</h3>
+                    </div>
+                    <p class="text-xs text-slate-400 mb-4">เจ้าของห้องสร้างรายการห้องเช่า ค่าเช่า และเงินประกัน</p>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="text-xs text-slate-400">ข้อมูลห้อง / เลขที่ห้อง</label>
+                            <input id="regRoomInfo" type="text" placeholder="เช่น Room 501 Luxury Suite" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-200 mt-1 focus:outline-none focus:border-sky-500">
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="text-xs text-slate-400">ค่าเช่า (ETH)</label>
+                                <input id="regRentEth" type="number" step="0.0001" placeholder="0.001" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-200 mt-1 focus:outline-none focus:border-sky-500">
+                            </div>
+                            <div>
+                                <label class="text-xs text-slate-400">เงินประกัน (ETH)</label>
+                                <input id="regDepositEth" type="number" step="0.0001" placeholder="0.002" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-200 mt-1 focus:outline-none focus:border-sky-500">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <button id="btnRegister" class="w-full mt-4 bg-sky-600 hover:bg-sky-500 py-2 rounded-lg text-sm font-medium transition">
+                    ลงทะเบียนห้อง
+                </button>
+            </div>
+
+            <!-- 2. Create Agreement -->
+            <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center space-x-2 mb-3">
+                        <span class="w-7 h-7 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold text-sm">2</span>
+                        <h3 class="font-bold text-slate-200">สร้างสัญญาเช่า</h3>
+                    </div>
+                    <p class="text-xs text-slate-400 mb-4">ระบุคู่สัญญา วันเริ่ม-สิ้นสุด และเงื่อนไขสำคัญ</p>
+                    <div class="space-y-2.5">
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="text-xs text-slate-400">Property ID</label>
+                                <input id="agPropId" type="number" placeholder="1" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-200 mt-1">
+                            </div>
+                            <div>
+                                <label class="text-xs text-slate-400">ระยะเวลา (เดือน)</label>
+                                <input id="agDurationMonths" type="number" value="12" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-200 mt-1">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="text-xs text-slate-400">ที่อยู่ผู้เช่า (Tenant Address)</label>
+                            <input id="agTenant" type="text" placeholder="0x..." class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-200 font-mono mt-1">
+                        </div>
+                        <div>
+                            <label class="text-xs text-slate-400">เงื่อนไขสัญญา (Terms)</label>
+                            <input id="agTerms" type="text" placeholder="ห้ามเลี้ยงสัตว์ สัญญา 1 ปี" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-200 mt-1">
+                        </div>
+                    </div>
+                </div>
+                <button id="btnCreateAg" class="w-full mt-4 bg-indigo-600 hover:bg-indigo-500 py-2 rounded-lg text-sm font-medium transition">
+                    สร้างสัญญาเช่า
+                </button>
+            </div>
+
+            <!-- 3. Confirm Agreement -->
+            <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center space-x-2 mb-3">
+                        <span class="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-sm">3</span>
+                        <h3 class="font-bold text-slate-200">ยืนยันสัญญา</h3>
+                    </div>
+                    <p class="text-xs text-slate-400 mb-4">ผู้เช่าและเจ้าของกดยอมรับเงื่อนไขด้วย Wallet ของตน</p>
+                    <div>
+                        <label class="text-xs text-slate-400">Agreement ID</label>
+                        <input id="confAgId" type="number" placeholder="1" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-200 mt-1">
+                    </div>
+                    <div class="mt-4 p-3 rounded-lg bg-slate-800/50 border border-slate-700/40 text-xs text-slate-400">
+                        💡 <b>คำแนะนำ:</b> สลับไปยังกระเป๋าผู้เช่าใน MetaMask แล้วกดปุ่มยืนยันด้านล่าง
+                    </div>
+                </div>
+                <button id="btnConfirmAg" class="w-full mt-4 bg-emerald-600 hover:bg-emerald-500 py-2 rounded-lg text-sm font-medium transition">
+                    ยืนยันสัญญา (Confirm)
+                </button>
+            </div>
+
+            <!-- 4. Deposit Security -->
+            <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center space-x-2 mb-3">
+                        <span class="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-sm">4</span>
+                        <h3 class="font-bold text-slate-200">ฝากเงินประกัน (Escrow)</h3>
+                    </div>
+                    <p class="text-xs text-slate-400 mb-4">ผู้เช่าโอน ETH เงินประกันล็อคเข้าสู่ Smart Contract</p>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="text-xs text-slate-400">Agreement ID</label>
+                            <input id="depAgId" type="number" placeholder="1" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-200 mt-1">
+                        </div>
+                        <div>
+                            <label class="text-xs text-slate-400">ยอดเงินประกัน (ETH)</label>
+                            <input id="depEthAmount" type="number" step="0.0001" placeholder="0.002" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-200 mt-1">
+                        </div>
+                    </div>
+                </div>
+                <button id="btnDeposit" class="w-full mt-4 bg-amber-600 hover:bg-amber-500 py-2 rounded-lg text-sm font-medium transition">
+                    วางเงินประกัน (Deposit ETH)
+                </button>
+            </div>
+
+            <!-- 5. Pay Rent & History -->
+            <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center space-x-2 mb-3">
+                        <span class="w-7 h-7 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center font-bold text-sm">5</span>
+                        <h3 class="font-bold text-slate-200">บันทึกค่าเช่า</h3>
+                    </div>
+                    <p class="text-xs text-slate-400 mb-4">ผู้เช่าชำระค่าเช่ารายงวด และตรวจสอบประวัติ</p>
+                    <div class="space-y-3">
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="text-xs text-slate-400">Agreement ID</label>
+                                <input id="rentAgId" type="number" placeholder="1" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-200 mt-1">
+                            </div>
+                            <div>
+                                <label class="text-xs text-slate-400">ยอดค่าเช่า (ETH)</label>
+                                <input id="rentEthAmount" type="number" step="0.0001" placeholder="0.001" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-200 mt-1">
+                            </div>
+                        </div>
+                        <button id="btnPayRent" class="w-full bg-cyan-600 hover:bg-cyan-500 py-2 rounded-lg text-sm font-medium transition">
+                            จ่ายค่าเช่างวดนี้
+                        </button>
+                    </div>
+
+                    <div class="mt-4 pt-3 border-t border-slate-800">
+                        <label class="text-xs text-slate-400">ตรวจสอบประวัติการจ่ายเงิน</label>
+                        <div class="flex gap-2 mt-1">
+                            <input id="histAgId" type="number" placeholder="ID" class="w-20 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-slate-200">
+                            <button id="btnQueryHistory" class="flex-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 py-1 rounded-lg text-xs font-medium">
+                                ค้นหาประวัติ
+                            </button>
+                        </div>
+                        <div id="historyBox" class="mt-2 max-h-24 overflow-y-auto"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 6. Inspection & Refund Deposit -->
+            <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center space-x-2 mb-3">
+                        <span class="w-7 h-7 rounded-lg bg-teal-500/20 text-teal-400 flex items-center justify-center font-bold text-sm">6</span>
+                        <h3 class="font-bold text-slate-200">ตรวจห้อง & คืนเงินประกัน</h3>
+                    </div>
+                    <p class="text-xs text-slate-400 mb-3">ตรวจสภาพห้อง ยื่นขอหักเงิน (ถ้ามี) และคืนเงินประกัน</p>
+                    <div class="space-y-2">
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="text-xs text-slate-400">Agreement ID</label>
+                                <input id="inspAgId" type="number" placeholder="1" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-slate-200">
+                            </div>
+                            <div>
+                                <label class="text-xs text-slate-400">หักเงิน (ETH)</label>
+                                <input id="inspDeductEth" type="number" step="0.0001" placeholder="0" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-slate-200">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="text-xs text-slate-400">เหตุผลการหักเงิน (ถ้ามี)</label>
+                            <input id="inspReason" type="text" placeholder="เช่น ค่าทำความสะอาด หรือ โคมไฟแตก" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-slate-200">
+                        </div>
+                        <button id="btnInspect" class="w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 py-1.5 rounded-lg text-xs font-medium">
+                            เจ้าของบันทึกผลตรวจห้อง
+                        </button>
+                        <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800">
+                            <button id="btnAgree" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 py-1.5 rounded-lg text-xs font-medium text-amber-300">
+                                ผู้เช่ายินยอมรับผล
+                            </button>
+                            <button id="btnRefund" class="bg-teal-600 hover:bg-teal-500 py-1.5 rounded-lg text-xs font-medium">
+                                คืนเงินประกัน
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 7. Dispute Resolution -->
+            <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl flex flex-col justify-between md:col-span-2 lg:col-span-3">
+                <div>
+                    <div class="flex items-center space-x-2 mb-2">
+                        <span class="w-7 h-7 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold text-sm">7</span>
+                        <h3 class="font-bold text-slate-200">จัดการข้อโต้แย้ง (Dispute Resolution)</h3>
+                    </div>
+                    <p class="text-xs text-slate-400 mb-4">กรณีมีข้อพิพาทเรื่องความเสียหาย ผู้มีอำนาจ (SmartLiving Arbitrator) จะพิจารณาและตัดสินก่อนปล่อยเงิน</p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Raise Dispute -->
+                        <div class="p-4 bg-slate-800/40 rounded-xl border border-slate-700/50 space-y-3">
+                            <h4 class="text-xs font-bold text-rose-400 uppercase tracking-wide">ฝั่งคู่สัญญา: ยื่นเปิดข้อพิพาท</h4>
+                            <div>
+                                <label class="text-xs text-slate-400">Agreement ID</label>
+                                <input id="dispAgId" type="number" placeholder="1" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-200 mt-1">
+                            </div>
+                            <div>
+                                <label class="text-xs text-slate-400">เหตุผลข้อโต้แย้ง</label>
+                                <input id="dispReason" type="text" placeholder="ผู้เช่าไม่ได้ทำความเสียหายตามที่เจ้าของแจ้ง" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-200 mt-1">
+                            </div>
+                            <button id="btnRaiseDisp" class="w-full bg-rose-600/80 hover:bg-rose-600 py-2 rounded-lg text-xs font-medium transition">
+                                เปิดข้อพิพาท (Raise Dispute)
+                            </button>
+                        </div>
+
+                        <!-- Resolve Dispute -->
+                        <div class="p-4 bg-slate-800/40 rounded-xl border border-slate-700/50 space-y-3">
+                            <h4 class="text-xs font-bold text-amber-400 uppercase tracking-wide">ฝั่งผู้มีอำนาจ (Admin/Arbitrator): ชี้ขาดและปล่อยเงิน</h4>
+                            <div class="grid grid-cols-3 gap-2">
+                                <div>
+                                    <label class="text-xs text-slate-400">Agreement ID</label>
+                                    <input id="resAgId" type="number" placeholder="1" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-200 mt-1">
+                                </div>
+                                <div>
+                                    <label class="text-xs text-slate-400">จ่ายเจ้าของ (ETH)</label>
+                                    <input id="resLandlordEth" type="number" step="0.0001" placeholder="0.0005" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-200 mt-1">
+                                </div>
+                                <div>
+                                    <label class="text-xs text-slate-400">คืนผู้เช่า (ETH)</label>
+                                    <input id="resTenantEth" type="number" step="0.0001" placeholder="0.0015" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-200 mt-1">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="text-xs text-slate-400">บันทึกผลการตัดสิน (Resolution Notes)</label>
+                                <input id="resNotes" type="text" placeholder="แบ่งเงินประกันตามหลักฐานภาพถ่ายความเสียหาย" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-200 mt-1">
+                            </div>
+                            <button id="btnResolveDisp" class="w-full bg-amber-600 hover:bg-amber-500 py-2 rounded-lg text-xs font-medium transition">
+                                ตัดสินข้อพิพาทและปล่อยเงิน (Resolve & Release)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-800 py-6 text-center text-xs text-slate-500">
+        SmartLiving Property Management DApp © 2026 | Ethereum Sepolia Testnet | CSI301 Final Project
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>
