@@ -200,10 +200,12 @@ function setupEventListeners() {
 
     document.getElementById('btnAgree').addEventListener('click', async () => {
         if (!checkReady()) return;
-        const agId = document.getElementById('agreeAgId').value.trim();
+        const agId = (document.getElementById('agreeAgId') || document.getElementById('inspAgId'))?.value?.trim();
         if (!agId) return alert('กรุณาใส่ Agreement ID');
+
         try {
             const tx = await contract.agreeToInspectionDeduction(agId);
+            alert('กำลังส่งการยินยอม...');
             await tx.wait();
             alert('ผู้เช่ายินยอมรับการหักเงินประกันเรียบร้อย');
         } catch (e) { handleError(e); }
@@ -211,7 +213,7 @@ function setupEventListeners() {
 
     document.getElementById('btnRefund').addEventListener('click', async () => {
         if (!checkReady()) return;
-        const agId = document.getElementById('refAgId').value.trim();
+        const agId = (document.getElementById('refAgId') || document.getElementById('inspAgId'))?.value?.trim();
         if (!agId) return alert('กรุณาใส่ Agreement ID');
         try {
             const tx = await contract.refundDeposit(agId);
